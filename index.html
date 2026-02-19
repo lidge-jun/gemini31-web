@@ -1479,10 +1479,11 @@
                             }
                             if (!et) continue;
                             if (et === 'thinking') { hasThinking = true; thinkingText += ed; thinkingPanel.querySelector('.thinking-content').textContent = thinkingText; const tc = thinkingPanel.querySelector('.thinking-content'); tc.scrollTop = tc.scrollHeight; }
-                            else if (et === 'text') { responseText += ed; contentDiv.innerHTML = renderMd(responseText); }
+                            else if (et === 'text') { responseText += ed; contentDiv.textContent = responseText; }
                             else if (et === 'meta') { try { metaData = typeof ed === 'string' ? JSON.parse(ed) : ed; } catch (_) { } }
                             else if (et === 'error') { contentDiv.innerHTML = `<span style="color:#ff8888">❌ ${esc(ed)}</span>`; }
-                            chatEl.scrollTop = chatEl.scrollHeight;
+                            const atBottom = chatEl.scrollHeight - chatEl.scrollTop - chatEl.clientHeight < 150;
+                            if (atBottom) chatEl.scrollTop = chatEl.scrollHeight;
                         }
                     }
                 } else {
@@ -1495,6 +1496,9 @@
                     if (result.error) contentDiv.innerHTML = `<span style="color:#ff8888">❌ ${esc(result.error)}</span>`;
                 }
             } catch (e) { contentDiv.innerHTML = `<span style="color:#ff8888">❌ ${esc(e.message)}</span>`; }
+
+            // Final markdown render (replaces plain text)
+            if (responseText) contentDiv.innerHTML = renderMd(responseText);
 
             // Show meta + grounding
             if (metaData) {
