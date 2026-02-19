@@ -67,8 +67,16 @@ def get_token():
     return creds.token
 
 
-def _build_contents(prompt: str, files: list = None):
-    """Build Vertex AI contents array with text and optional files (images, PDF, audio, video)."""
+def _build_contents(prompt: str, files: list = None, history: list = None):
+    """Build Vertex AI contents array with conversation history + current turn."""
+    contents = []
+    # Add conversation history (user/ai → user/model roles)
+    if history:
+        for msg in history:
+            role = "model" if msg.get("role") == "ai" else "user"
+            contents.append({"role": role, "parts": [{"text": msg.get("text", "")}]})
+
+    # Current turn: user prompt + optional files
     parts = []
     if files:
         for f in files:
@@ -79,7 +87,8 @@ def _build_contents(prompt: str, files: list = None):
                 }
             })
     parts.append({"text": prompt})
-    return [{"role": "user", "parts": parts}]
+    contents.append({"role": "user", "parts": parts})
+    return contents
 
 
 def _call_gemini(contents, model, temp, thinking_level, stream=True, web_search=False, system_prompt=None):
@@ -125,9 +134,9 @@ def _call_gemini(contents, model, temp, thinking_level, stream=True, web_search=
 
 
 def stream_gemini(prompt, model=MODEL, temp=0.7, thinking_level="high",
-                  files=None, web_search=False, system_prompt=None):
+                  files=None, web_search=False, system_prompt=None, history=None):
     """Generator that yields SSE events from Vertex AI streamGenerateContent."""
-    contents = _build_contents(prompt, files)
+    contents = _build_contents(prompt, files, history)
     conn, resp = _call_gemini(contents, model, temp, thinking_level,
                               stream=True, web_search=web_search, system_prompt=system_prompt)
 
@@ -194,9 +203,9 @@ def stream_gemini(prompt, model=MODEL, temp=0.7, thinking_level="high",
 
 
 def sync_gemini(prompt, model=MODEL, temp=0.7, thinking_level="high",
-                files=None, web_search=False, system_prompt=None):
+                files=None, web_search=False, system_prompt=None, history=None):
     """Non-streaming call. Returns full response dict."""
-    contents = _build_contents(prompt, files)
+    contents = _build_contents(prompt, files, history)
     conn, resp = _call_gemini(contents, model, temp, thinking_level,
                               stream=False, web_search=web_search, system_prompt=system_prompt)
     body = json.loads(resp.read().decode())
@@ -402,6 +411,7 @@ class Handler(BaseHTTPRequestHandler):
         use_stream = body.get("stream", True)
         web_search = body.get("web_search", False)
         system_prompt = body.get("system_prompt")
+        history = body.get("history")  # [{role, text}]
 
         if use_stream:
             self.send_response(200)
@@ -411,7 +421,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
 
             try:
-                for evt in stream_gemini(prompt, model, temp, thinking_level, files, web_search, system_prompt):
+                for evt in stream_gemini(prompt, model, temp, thinking_level, files, web_search, system_prompt, history):
                     payload = json.dumps({"event": evt["event"], "data": evt["data"]}, ensure_ascii=False)
                     self.wfile.write(f"data: {payload}\n\n".encode())
                     self.wfile.flush()
@@ -421,7 +431,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.flush()
         else:
             try:
-                result = sync_gemini(prompt, model, temp, thinking_level, files, web_search, system_prompt)
+                result = sync_gemini(prompt, model, temp, thinking_level, files, web_search, system_prompt, history)
                 self._json_response(result)
             except Exception as e:
                 self._json_response({"error": str(e)}, 500)

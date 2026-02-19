@@ -1453,6 +1453,7 @@
                 thinking_level: document.getElementById('thinkingLevel').value,
                 stream: useStream,
                 web_search: useWebSearch,
+                history: messages.slice(0, -1).map(m => ({ role: m.role, text: m.text })),
             };
             if (systemPrompt.trim()) reqBody.system_prompt = systemPrompt.trim();
             if (filesCopy.length) reqBody.files = filesCopy;
