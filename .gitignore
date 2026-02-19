@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 nyc-skyline.html
 cli.py
+chats/
