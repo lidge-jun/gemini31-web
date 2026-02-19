@@ -669,20 +669,8 @@
 
         .streaming-cursor::after {
             content: '▊';
-            animation: blink .8s infinite;
             color: #4285f4;
-        }
-
-        @keyframes blink {
-
-            0%,
-            100% {
-                opacity: 0;
-            }
-
-            50% {
-                opacity: 1;
-            }
+            opacity: 0.7;
         }
 
         /* Input area */
@@ -1444,6 +1432,8 @@
             chatEl.scrollTop = chatEl.scrollHeight;
 
             let thinkingText = '', responseText = '', hasThinking = false, metaData = null;
+            const streamNode = document.createTextNode('');
+            contentDiv.appendChild(streamNode);
             const isFirstExchange = messages.length === 1;
 
             const reqBody = {
@@ -1480,7 +1470,7 @@
                             }
                             if (!et) continue;
                             if (et === 'thinking') { hasThinking = true; thinkingText += ed; thinkingPanel.querySelector('.thinking-content').textContent = thinkingText; const tc = thinkingPanel.querySelector('.thinking-content'); tc.scrollTop = tc.scrollHeight; }
-                            else if (et === 'text') { responseText += ed; contentDiv.textContent = responseText; }
+                            else if (et === 'text') { responseText += ed; streamNode.nodeValue += ed; }
                             else if (et === 'meta') { try { metaData = typeof ed === 'string' ? JSON.parse(ed) : ed; } catch (_) { } }
                             else if (et === 'error') { contentDiv.innerHTML = `<span style="color:#ff8888">❌ ${esc(ed)}</span>`; }
                             const atBottom = chatEl.scrollHeight - chatEl.scrollTop - chatEl.clientHeight < 150;
