@@ -1033,6 +1033,7 @@
                     <div class="toggle" id="webSearchToggle"></div>
                 </div>
                 <button class="sys-prompt-btn" id="sysPromptBtn">📝 시스템 프롬프트 <span id="sysPromptBadge"></span></button>
+                <button class="save-config-btn" id="saveSessionBtn" style="margin-top:4px">💾 설정 저장</button>
             </div>
 
             <hr style="border:none; border-top:1px solid rgba(255,255,255,.06); margin:8px 0;">
@@ -1147,6 +1148,30 @@
         // ── Stream + WebSearch toggles ──
         streamToggle.onclick = () => { useStream = !useStream; streamToggle.classList.toggle('on', useStream); };
         webSearchToggle.onclick = () => { useWebSearch = !useWebSearch; webSearchToggle.classList.toggle('on', useWebSearch); };
+
+        // ── Load saved session settings ──
+        (function loadSession() {
+            const saved = JSON.parse(localStorage.getItem('sessionSettings') || '{}');
+            if (saved.model) document.getElementById('model').value = saved.model;
+            if (saved.thinkingLevel) document.getElementById('thinkingLevel').value = saved.thinkingLevel;
+            if (saved.temperature != null) { tempSlider.value = saved.temperature; tempVal.textContent = saved.temperature; }
+            if (saved.streaming != null) { useStream = saved.streaming; streamToggle.classList.toggle('on', useStream); }
+            if (saved.webSearch != null) { useWebSearch = saved.webSearch; webSearchToggle.classList.toggle('on', useWebSearch); }
+        })();
+
+        document.getElementById('saveSessionBtn').onclick = () => {
+            const settings = {
+                model: document.getElementById('model').value,
+                thinkingLevel: document.getElementById('thinkingLevel').value,
+                temperature: parseFloat(tempSlider.value),
+                streaming: useStream,
+                webSearch: useWebSearch,
+            };
+            localStorage.setItem('sessionSettings', JSON.stringify(settings));
+            const btn = document.getElementById('saveSessionBtn');
+            btn.textContent = '✅ 저장 완료!';
+            setTimeout(() => btn.textContent = '💾 설정 저장', 1500);
+        };
 
         // ── System Prompt ──
         let systemPrompt = localStorage.getItem('systemPrompt') || '';
