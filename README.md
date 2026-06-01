@@ -1,32 +1,45 @@
 # gemini31-web
 
-Gemini 3.1 Pro Preview — Streaming Web UI with Thinking Display
+[![CI](https://github.com/lidge-jun/gemini31-web/actions/workflows/ci.yml/badge.svg)](https://github.com/lidge-jun/gemini31-web/actions/workflows/ci.yml)
+[![Pages](https://github.com/lidge-jun/gemini31-web/actions/workflows/pages.yml/badge.svg)](https://github.com/lidge-jun/gemini31-web/actions/workflows/pages.yml)
+![Python](https://img.shields.io/badge/python-3.x-111827)
+![License pending](https://img.shields.io/badge/license-pending-6b7280)
 
-Real-time SSE streaming chat interface for Vertex AI Gemini models. Shows thinking process (thought summaries) live as the model reasons, then streams the response with markdown rendering.
+Streaming Web UI for Vertex AI Gemini models with live thinking display.
+
+This is a local Python + vanilla JavaScript experiment. `server.py` serves `index.html`, calls Vertex AI `streamGenerateContent`, relays SSE events to the browser, and stores chat history as local JSON files under `chats/`.
+
+## Public Surface
+
+| Area | Current status |
+| --- | --- |
+| Repository | Public repo, GitHub reports 2 stars / 0 forks |
+| Runtime | Python stdlib HTTP server + vanilla JS frontend |
+| Required package | `google-auth` |
+| Default port | `3131` |
+| Default model config | `VERTEX_MODEL=gemini-3.1-pro-preview` in `server.py` |
+| Local data | Chat JSON files under `chats/` |
+| GitHub Pages | Prepared from `/docs` after an authorized push |
+| CI | Prepared in `.github/workflows/ci.yml`; no remote runs yet |
+| License | No root `LICENSE` file is declared in this repository |
 
 ## Features
 
-- **SSE Streaming** — responses stream token-by-token (with on/off toggle)
-- **Thinking Display** — collapsible panel shows model's reasoning in real-time
-- **Thinking Level Control** — adjust reasoning depth (High/Medium/Low/Minimal)
-- **Multi-model** — Gemini 3.1 Pro, 3 Pro, 2.5 Pro, 2.5 Flash
-- **Chat History** — conversations saved as JSON in `chats/` with sidebar navigation
-- **AI Auto-Title** — first exchange auto-generates a chat title via Gemini
-- **System Prompt** — modal editor for custom AI instructions (persisted in localStorage)
-- **🔍 Web Search** — Google Search grounding toggle for real-time web results
-- **Multimodal Input** — drag-and-drop / paste images, PDF, audio, video files
-- **Code Highlighting** — highlight.js + language labels + copy button
-- **KaTeX Math** — inline `$...$` and block `$$...$$` math rendering
-- **Token Stats** — thinking/output/input/total token counts per response
-- **Markdown Rendering** — code blocks, tables, lists, blockquotes
-- **Collapsible Sidebars** — left (chat list) and right (settings) independently toggle
-- **Settings Sidebar** — session settings (instant) + .env config (save to disk)
-- **Zero dependencies** — only `google-auth` (stdlib HTTP server + vanilla JS)
+- SSE streaming responses with a stream on/off toggle.
+- Collapsible thinking panel for model thought-summary chunks.
+- Thinking level control: high, medium, low, minimal.
+- Model selector for Gemini 3.1 Pro, 3 Pro, 2.5 Pro, and 2.5 Flash-style config strings.
+- Chat history sidebar backed by local `chats/*.json`.
+- AI auto-title endpoint for the first exchange.
+- System prompt modal saved in localStorage.
+- Google Search grounding toggle.
+- Multimodal drag/drop and paste handling for image, PDF, audio, video, and text files.
+- Markdown rendering, code highlighting, KaTeX math, and token statistics.
 
 ## Setup
 
-1. **Service Account**: Create a Vertex AI service account key (JSON)
-2. **Configure `.env`**:
+1. Create a Vertex AI service account JSON key.
+2. Create `.env`:
 
 ```env
 GOOGLE_APPLICATION_CREDENTIALS=~/secure/vertex-sa.json
@@ -35,37 +48,63 @@ VERTEX_MAX_TOKENS=65536
 PORT=3131
 ```
 
-> **Note**: `VERTEX_PROJECT` is auto-detected from the SA JSON file's `project_id` field. Set it manually only if you need to override.
+`VERTEX_PROJECT` is auto-detected from the service account JSON `project_id`. Set it manually only when you need to override that value.
 
-3. **Install & Run**:
+3. Install and run:
 
 ```bash
 pip install google-auth
 python3 server.py
-# → http://localhost:3131
 ```
+
+Then open `http://localhost:3131`.
+
+## Verification
+
+```bash
+python3 -m py_compile server.py
+```
+
+Full live testing requires valid Vertex AI credentials and a model name available to the configured Google Cloud project. Static public-surface validation does not require secrets.
 
 ## Architecture
 
-```
-Browser ←SSE→ server.py ←SSE→ Vertex AI streamGenerateContent
-                              (includeThoughts: true)
+```text
+Browser
+  <- server-sent events ->
+server.py
+  <- Vertex AI streamGenerateContent ->
+Gemini model configured by VERTEX_MODEL
 ```
 
-Server relays Vertex AI SSE stream to browser with event types:
-- `thinking` — thought summary chunks
-- `text` — response text chunks
-- `meta` — final token statistics + grounding sources
-- `done` — stream complete
+Server event types:
+
+| Event | Meaning |
+| --- | --- |
+| `thinking` | Thought summary chunk |
+| `text` | Response text chunk |
+| `meta` | Token statistics and grounding sources |
+| `done` | Stream completed |
 
 API endpoints:
-- `GET /` — serve UI
-- `POST /` — chat (streaming or sync)
-- `GET/POST /api/config` — read/update .env settings
-- `GET /api/chats` — list saved chats
-- `GET/POST/DELETE /api/chats/:id` — CRUD individual chat
-- `POST /api/title` — AI-generated chat title
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /` | Serve UI |
+| `POST /` | Chat, streaming or sync |
+| `GET/POST /api/config` | Read or update `.env` settings |
+| `GET /api/chats` | List saved chats |
+| `GET/POST/DELETE /api/chats/:id` | Chat history CRUD |
+| `POST /api/title` | AI-generated chat title |
+
+## Security & Privacy
+
+- Do not commit `.env`, service account JSON, chat history, or generated uploads.
+- `GOOGLE_APPLICATION_CREDENTIALS` should point to a private file outside the repository.
+- The app stores chat history locally in `chats/`; those files may contain private prompts, uploaded-file metadata, or model outputs.
+- `/api/config` can write `.env` values to disk. Run this app only on a trusted local machine/network.
+- GitHub Pages hosts documentation only, not the credentialed Vertex UI.
 
 ## License
 
-MIT
+This repository currently has no root `LICENSE` file. Add an explicit license before redistributing or depending on the project externally.

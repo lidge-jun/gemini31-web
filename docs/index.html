@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>gemini31-web - Streaming Vertex AI Chat UI</title>
+    <meta
+      name="description"
+      content="gemini31-web is a local Python and vanilla JavaScript UI for Vertex AI Gemini streaming responses, thinking summaries, and local chat history."
+    />
+    <link rel="canonical" href="https://lidge-jun.github.io/gemini31-web/" />
+    <meta property="og:title" content="gemini31-web" />
+    <meta
+      property="og:description"
+      content="Streaming Vertex AI Gemini UI with SSE, thinking display, multimodal input, and local JSON chat history."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lidge-jun.github.io/gemini31-web/" />
+    <meta property="og:image" content="https://lidge-jun.github.io/gemini31-web/assets/social-preview.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="gemini31-web" />
+    <meta name="twitter:description" content="Streaming Vertex AI Gemini UI for local credentialed use." />
+    <meta name="twitter:image" content="https://lidge-jun.github.io/gemini31-web/assets/social-preview.svg" />
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        color: #111827;
+        background: #f8fafc;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 22px 0;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 850;
+        text-decoration: none;
+      }
+
+      .mark {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border-radius: 10px;
+        background: #111827;
+        color: #fff;
+        font-size: 12px;
+      }
+
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 16px;
+        color: #475569;
+        font-size: 14px;
+        font-weight: 750;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 0.92fr);
+        gap: 40px;
+        align-items: center;
+        min-height: calc(100vh - 86px);
+        padding: 34px 0 72px;
+      }
+
+      .eyebrow {
+        color: #7c3aed;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 14px 0 18px;
+        font-size: clamp(42px, 7vw, 84px);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .lede {
+        max-width: 680px;
+        color: #475569;
+        font-size: clamp(18px, 2vw, 22px);
+      }
+
+      .actions,
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .button {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        border-radius: 8px;
+        padding: 0 16px;
+        background: #111827;
+        color: #fff;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .button.secondary {
+        border: 1px solid #dbe3ef;
+        background: #fff;
+        color: #111827;
+      }
+
+      .stat,
+      .panel,
+      .card {
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .stat {
+        min-width: 132px;
+        padding: 14px;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 24px;
+      }
+
+      .stat span {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .panel {
+        min-width: 0;
+        overflow: hidden;
+        box-shadow: 0 24px 70px rgb(17 24 39 / 0.08);
+      }
+
+      .mock {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        min-height: 430px;
+      }
+
+      .side {
+        border-right: 1px solid #e2e8f0;
+        background: #f8fafc;
+        padding: 18px;
+      }
+
+      .main {
+        padding: 18px;
+      }
+
+      .pill,
+      .bubble {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        padding: 10px;
+      }
+
+      .pill {
+        margin-bottom: 10px;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .bubble {
+        margin-bottom: 12px;
+      }
+
+      .thinking {
+        border-color: #ddd6fe;
+        background: #f5f3ff;
+      }
+
+      section {
+        padding: 70px 0;
+        border-top: 1px solid #dbe3ef;
+      }
+
+      h2 {
+        margin: 0 0 18px;
+        font-size: clamp(30px, 4vw, 54px);
+        line-height: 1;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        min-width: 0;
+        padding: 20px;
+      }
+
+      .card h3 {
+        margin: 0 0 10px;
+      }
+
+      .card p,
+      .card code {
+        color: #475569;
+      }
+
+      .card code {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      footer {
+        padding: 34px 0;
+        color: #64748b;
+        font-size: 14px;
+      }
+
+      @media (max-width: 900px) {
+        header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        nav {
+          justify-content: flex-start;
+        }
+
+        .hero,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          min-height: auto;
+          padding-top: 20px;
+        }
+
+        .mock {
+          grid-template-columns: 1fr;
+        }
+
+        .side {
+          border-right: 0;
+          border-bottom: 1px solid #e2e8f0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shell">
+      <a class="brand" href="https://github.com/lidge-jun/gemini31-web">
+        <span class="mark">G31</span>
+        <span>gemini31-web</span>
+      </a>
+      <nav aria-label="Primary">
+        <a href="#workflow">Workflow</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#security">Security</a>
+        <a href="https://github.com/lidge-jun/gemini31-web">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="shell hero">
+        <div>
+          <div class="eyebrow">Vertex AI local UI</div>
+          <h1>Streaming Gemini chat with thinking display.</h1>
+          <p class="lede">
+            A local Web UI that relays Vertex AI streaming responses through Python SSE, separates thought-summary chunks
+            from answer text, and stores chat history as local JSON.
+          </p>
+          <div class="actions" aria-label="Primary links">
+            <a class="button" href="https://github.com/lidge-jun/gemini31-web">Open repository</a>
+            <a class="button secondary" href="https://github.com/lidge-jun/gemini31-web/blob/main/README.md">Read README</a>
+          </div>
+          <div class="stats" aria-label="Project signals">
+            <div class="stat"><strong>3131</strong><span>default port</span></div>
+            <div class="stat"><strong>SSE</strong><span>streaming</span></div>
+            <div class="stat"><strong>local</strong><span>chat JSON</span></div>
+          </div>
+        </div>
+
+        <aside class="panel" aria-label="UI preview">
+          <div class="mock">
+            <div class="side">
+              <div class="pill">Chat history</div>
+              <div class="pill">Settings</div>
+              <div class="pill">Search grounding</div>
+            </div>
+            <div class="main">
+              <div class="bubble">User: summarize this uploaded PDF.</div>
+              <div class="bubble thinking">Thinking summary streams here.</div>
+              <div class="bubble">Gemini response streams as text chunks with token stats.</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <section id="workflow">
+        <div class="shell">
+          <h2>Made for credentialed local use.</h2>
+          <div class="grid">
+            <article class="card">
+              <h3>Configure Vertex</h3>
+              <p>Set <code>GOOGLE_APPLICATION_CREDENTIALS</code>, optional <code>VERTEX_PROJECT</code>, and <code>VERTEX_MODEL</code>.</p>
+            </article>
+            <article class="card">
+              <h3>Run locally</h3>
+              <p>Install <code>google-auth</code>, run <code>python3 server.py</code>, then open <code>localhost:3131</code>.</p>
+            </article>
+            <article class="card">
+              <h3>Keep history private</h3>
+              <p>Chats are JSON files under <code>chats/</code> and should not be committed.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <div class="shell">
+          <h2>Small server, large browser surface.</h2>
+          <div class="grid">
+            <article class="card">
+              <h3>Python</h3>
+              <p><code>server.py</code> handles auth, Vertex calls, SSE relay, config, and chat JSON CRUD.</p>
+            </article>
+            <article class="card">
+              <h3>Browser</h3>
+              <p><code>index.html</code> contains the vanilla JS UI, markdown rendering, multimodal input, and settings panels.</p>
+            </article>
+            <article class="card">
+              <h3>Pages</h3>
+              <p>GitHub Pages hosts docs only. The live UI requires private credentials and should stay local.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="security">
+        <div class="shell">
+          <h2>Secrets and chats stay off GitHub.</h2>
+          <div class="grid">
+            <article class="card">
+              <h3>Secrets</h3>
+              <p>Never commit `.env` or the Vertex service account JSON file.</p>
+            </article>
+            <article class="card">
+              <h3>Config writes</h3>
+              <p><code>/api/config</code> can update `.env`; run the app only on a trusted local network.</p>
+            </article>
+            <article class="card">
+              <h3>Verification</h3>
+              <p><code>python3 -m py_compile server.py</code> validates the server without requiring credentials.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      No root LICENSE file is declared at this checkpoint. Pages deployment is prepared from /docs after an authorized push.
+    </footer>
+  </body>
+</html>
